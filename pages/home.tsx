@@ -1,15 +1,17 @@
 import Head from 'next/head'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 interface ExchangeRate {
   [key: string]: string
 }
 
 export default function Home() {
-  const getExchangeRates = async () => {
+  const [rates, setRates] = useState<ExchangeRate[]>([])
+
+  const getExchangeRates = async (): Promise<ExchangeRate[]> => {
     const url = `https://api.coinbase.com/v2/exchange-rates?currency=USD`
 
-    return new Promise(async (resolve, reject) => {
+    return new Promise<ExchangeRate[]>(async (resolve, reject) => {
       fetch(url)
         .then((response) => {
           if (response.ok) {
@@ -17,19 +19,19 @@ export default function Home() {
           }
           throw new Error(`Request Failed with status code ${response.status}`)
         })
-        .then((data) => resolve(convertObjectToArray(data.data.rates)))
+        .then((data) => resolve(convertToObjectArray(data.data.rates)))
         .catch((error) => reject(error))
     })
   }
 
-  const convertObjectToArray = (rates: ExchangeRate): {currency: string; rate: string} [] => {
+  const convertToObjectArray = (rates: ExchangeRate): { currency: string; rate: string }[] => {
     return Object.entries(rates).map(([currency, rate]) => ({ currency, rate }))
   }
 
   useEffect(() => {
     const fetchData = async () => {
       const fetchedRates = await getExchangeRates()
-      console.log(fetchedRates)
+      setRates(fetchedRates as ExchangeRate[])
     }
 
     fetchData()
@@ -50,9 +52,11 @@ export default function Home() {
               name="fromCurrency"
               className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
             >
-              <option value="USD">USD</option>
-              <option value="EUR">EUR</option>
-              <option value="GBP">GBP</option>
+              {rates.map((rate, i) => (
+                <option value={rate.currency} key={i}>
+                  {rate.currency}
+                </option>
+              ))}
             </select>
           </div>
           <div>
