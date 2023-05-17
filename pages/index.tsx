@@ -1,6 +1,38 @@
 import Head from 'next/head'
+import { useEffect, useState } from 'react'
+
+interface ExchangeRate {
+  currency: string
+  rate: string
+}
 
 export default function Home() {
+  const [rates, setRates] = useState<ExchangeRate[]>([])
+
+  const getExchangeRates = async () => {
+    const url = `https://api.coinbase.com/v2/exchange-rates?currency=USD`
+    return new Promise(async (resolve, reject) => {
+      fetch(url)
+        .then((response) => {
+          if (response.ok) {
+            return response.json()
+          }
+          throw new Error(`Request Failed with status code ${response.status}`)
+        })
+        .then((data) => resolve(data.data.rates))
+        .catch((error) => reject(error))
+    })
+  }
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const fetchedRates = await getExchangeRates()
+      setRates(fetchedRates as ExchangeRate[])
+    }
+
+    fetchData()
+  }, [])
+
   return (
     <div>
       <Head>
@@ -16,9 +48,11 @@ export default function Home() {
               name="fromCurrency"
               className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
             >
-              <option value="USD">USD</option>
-              <option value="EUR">EUR</option>
-              <option value="GBP">GBP</option>
+              {rates.map((rate, i) => (
+                <option value={rate.currency} key={i}>
+                  {rate.currency}
+                </option>
+              ))}
             </select>
           </div>
           <div>
@@ -38,7 +72,7 @@ export default function Home() {
               id="toCurrency"
               name="toCurrency"
               readOnly
-              placeholder='result'
+              placeholder="result"
               className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-green-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
             />
           </div>
