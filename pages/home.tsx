@@ -7,9 +7,21 @@ interface ExchangeRate {
 
 export default function Home() {
   const [rates, setRates] = useState<ExchangeRate[]>([])
+  const [selectedFrom, setSelectedFrom] = useState<string>('USD')
+  const [selectedTo, setSelectedTo] = useState<string>('ETH')
+  const [fromResult, setFromResult] = useState<string>('')
+  const [toResult, setToResult] = useState<string>('')
 
-  const getExchangeRates = async (): Promise<ExchangeRate[]> => {
-    const url = `https://api.coinbase.com/v2/exchange-rates?currency=USD`
+  const onSelectFrom = async (currency: string) => {
+    const result: ExchangeRate[] = await getExchangeRates(currency)
+    const rate: ExchangeRate | undefined = result.find((curr) => curr.currency === currency)
+    if (rate) {
+      console.log(rate.rate)
+    }
+  }
+
+  const getExchangeRates = async (currency: string): Promise<ExchangeRate[]> => {
+    const url = `https://api.coinbase.com/v2/exchange-rates?currency=${currency}`
 
     return new Promise<ExchangeRate[]>(async (resolve, reject) => {
       fetch(url)
@@ -30,7 +42,7 @@ export default function Home() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const fetchedRates = await getExchangeRates()
+      const fetchedRates = await getExchangeRates(selectedFrom)
       setRates(fetchedRates as ExchangeRate[])
     }
 
@@ -48,27 +60,42 @@ export default function Home() {
           <div>
             <label className="block text-sm font-medium text-gray-700">From Currency</label>
             <select
+              onChange={(e) => onSelectFrom(e.target.value)}
               id="fromCurrency"
               name="fromCurrency"
               className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
             >
               {rates.map((rate, i) => (
-                <option value={rate.currency} key={i}>
+                <option value={rate.currency} key={i} selected={rate.currency === selectedFrom}>
                   {rate.currency}
                 </option>
               ))}
             </select>
           </div>
+
+          <div>
+            <input
+              id="fromCurrency"
+              name="fromCurrency"
+              readOnly
+              placeholder="result"
+              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-green-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+            />
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700">To Currency</label>
             <select
+              onChange={(e) => console.log(e.target.value)}
               id="toCurrency"
               name="toCurrency"
               className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
             >
-              <option value="USD">USD</option>
-              <option value="EUR">EUR</option>
-              <option value="GBP">GBP</option>
+              {rates.map((rate, i) => (
+                <option value={rate.currency} key={i} selected={rate.currency === selectedTo}>
+                  {rate.currency}
+                </option>
+              ))}
             </select>
           </div>
           <div>
