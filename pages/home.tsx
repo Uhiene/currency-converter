@@ -12,14 +12,6 @@ export default function Home() {
   const [fromResult, setFromResult] = useState<string>('')
   const [toResult, setToResult] = useState<string>('')
 
-  const onSelectFrom = async (currency: string) => {
-    const result: ExchangeRate[] = await getExchangeRates(currency)
-    const rate: ExchangeRate | undefined = result.find((curr) => curr.currency === currency)
-    if (rate) {
-      console.log(rate.rate)
-    }
-  }
-
   const getExchangeRates = async (currency: string): Promise<ExchangeRate[]> => {
     const url = `https://api.coinbase.com/v2/exchange-rates?currency=${currency}`
 
@@ -31,7 +23,21 @@ export default function Home() {
           }
           throw new Error(`Request Failed with status code ${response.status}`)
         })
-        .then((data) => resolve(convertToObjectArray(data.data.rates)))
+        .then((data) => {
+          const fetchedRates: ExchangeRate[] = convertToObjectArray(data.data.rates)
+          const fetchedFromRate: ExchangeRate | undefined = fetchedRates.find(
+            (curr) => curr.currency === selectedFrom
+          )
+          const fetchedToRate: ExchangeRate | undefined = fetchedRates.find(
+            (curr) => curr.currency === selectedTo
+          )
+
+          if (fetchedFromRate) setFromResult(fetchedFromRate.rate)
+          if (fetchedToRate) setToResult(fetchedToRate.rate)
+
+          setRates(fetchedRates)
+          resolve(fetchedRates)
+        })
         .catch((error) => reject(error))
     })
   }
@@ -42,17 +48,16 @@ export default function Home() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const fetchedRates = await getExchangeRates(selectedFrom)
-      setRates(fetchedRates as ExchangeRate[])
+      await getExchangeRates(selectedFrom)
     }
 
     fetchData()
-  }, [])
+  }, [selectedFrom, selectedTo])
 
   return (
     <div>
       <Head>
-        <title>Create Next App</title>
+        <title>Currency App</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <div className="p-4 max-w-md mx-auto">
@@ -60,7 +65,7 @@ export default function Home() {
           <div>
             <label className="block text-sm font-medium text-gray-700">From Currency</label>
             <select
-              onChange={(e) => onSelectFrom(e.target.value)}
+              onChange={(e) => setSelectedFrom(e.target.value)}
               id="fromCurrency"
               name="fromCurrency"
               className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
@@ -79,17 +84,20 @@ export default function Home() {
               name="fromCurrency"
               readOnly
               placeholder="result"
-              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-green-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-green-300
+              focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+              value={fromResult}
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700">To Currency</label>
             <select
-              onChange={(e) => console.log(e.target.value)}
+              onChange={(e) => setSelectedTo(e.target.value)}
               id="toCurrency"
               name="toCurrency"
-              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none
+              focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
             >
               {rates.map((rate, i) => (
                 <option value={rate.currency} key={i} selected={rate.currency === selectedTo}>
@@ -104,7 +112,9 @@ export default function Home() {
               name="toCurrency"
               readOnly
               placeholder="result"
-              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-green-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-green-300
+              focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+              value={toResult}
             />
           </div>
           <div>

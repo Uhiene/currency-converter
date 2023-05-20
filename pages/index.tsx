@@ -7,9 +7,10 @@ interface ExchangeRate {
 
 export default function Home() {
   const [rates, setRates] = useState<ExchangeRate[]>([])
-  const [selectedFrom, setSelectedFrom] = useState<string>("USD")
-  const [fromRates, setFromRates] = useState<string>("USD")
-  const [toRates, setToRates] = useState<string>("ETH")
+  const [selectedFrom, setSelectedFrom] = useState<string>('USD')
+  const [selectedTo, setSelectedTo] = useState<string>('ETH')
+  const [fromResult, setFromResult] = useState<string>('')
+  const [toResult, setToResult] = useState<string>('')
 
   const getExchangeRates = async (currency: string): Promise<ExchangeRate[]> => {
     const url = `https://api.coinbase.com/v2/exchange-rates?currency=${currency}`
@@ -22,7 +23,20 @@ export default function Home() {
           }
           throw new Error(`Request Failed with status code ${response.status}`)
         })
-        .then((data) => resolve(convertObjectToArray(data.data.rates)))
+        .then((data) => {
+          const fetchedRates: ExchangeRate[] = convertObjectToArray(data.data.rates)
+          const fetchedFromRate: ExchangeRate | undefined = fetchedRates.find(
+            (curr) => curr.currency === selectedFrom
+          )
+          const fetchedToRate: ExchangeRate | undefined = fetchedRates.find(
+            (curr) => curr.currency === selectedTo
+          )
+
+          setRates(fetchedRates)
+          if (fetchedFromRate) setFromResult(fetchedFromRate.rate)
+          if (fetchedToRate) setToResult(fetchedToRate.rate)
+          resolve(fetchedRates)
+        })
         .catch((error) => reject(error))
     })
   }
@@ -31,18 +45,15 @@ export default function Home() {
     return Object.entries(rates).map(([currency, rate]) => ({ currency, rate }))
   }
 
-  const onSelectFrom = (currency: string) => {
-
-  }
+  const onSelectFrom = (currency: string) => {}
 
   useEffect(() => {
     const fetchData = async () => {
-      const fetchedRates = await getExchangeRates(selectedFrom)
-      setRates(fetchedRates as ExchangeRate[])
+      await getExchangeRates(selectedFrom)
     }
 
     fetchData()
-  }, [])
+  }, [selectedFrom, selectedTo])
 
   return (
     <div>
@@ -55,6 +66,7 @@ export default function Home() {
           <div>
             <label className="block text-sm font-medium text-gray-700">From Currency</label>
             <select
+              onChange={(e) => setSelectedFrom(e.target.value)}
               id="fromCurrency"
               name="fromCurrency"
               className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
@@ -73,11 +85,13 @@ export default function Home() {
               readOnly
               placeholder="result"
               className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-purple-500 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+              value={fromResult}
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">To Currency</label>
             <select
+              onChange={(e) => setSelectedTo(e.target.value)}
               id="toCurrency"
               name="toCurrency"
               className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
@@ -96,6 +110,7 @@ export default function Home() {
               readOnly
               placeholder="result"
               className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-green-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+              value={toResult}
             />
           </div>
           <div>
