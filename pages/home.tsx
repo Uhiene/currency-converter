@@ -11,6 +11,8 @@ export default function Home() {
   const [selectedTo, setSelectedTo] = useState<string>('ETH')
   const [fromResult, setFromResult] = useState<string>('')
   const [toResult, setToResult] = useState<string>('')
+  const [fromRate, setFromRate] = useState<string>('')
+  const [toRate, setToRate] = useState<string>('')
 
   const getExchangeRates = async (currency: string): Promise<ExchangeRate[]> => {
     const url = `https://api.coinbase.com/v2/exchange-rates?currency=${currency}`
@@ -32,8 +34,14 @@ export default function Home() {
             (curr) => curr.currency === selectedTo
           )
 
-          if (fetchedFromRate) setFromResult(fetchedFromRate.rate)
-          if (fetchedToRate) setToResult(fetchedToRate.rate)
+          if (fetchedFromRate) {
+            setFromResult(fetchedFromRate.rate)
+            setFromRate(fetchedFromRate.rate)
+          }
+          if (fetchedToRate) {
+            setToResult(fetchedToRate.rate)
+            setToRate(fetchedToRate.rate)
+          }
 
           setRates(fetchedRates)
           resolve(fetchedRates)
@@ -54,6 +62,18 @@ export default function Home() {
     fetchData()
   }, [selectedFrom, selectedTo])
 
+  const onChangeFrom = (num: string) => {
+    const result = (Number(num) / Number(fromRate)) * Number(toRate)
+    setToResult(String(result))
+    setFromResult(num)
+  }
+
+  const onChangeTo = (num: string) => {
+    const result = (Number(num) / Number(toRate)) * Number(fromRate)
+    setFromResult(String(result))
+    setToResult(num)
+  }
+
   return (
     <div>
       <Head>
@@ -61,7 +81,7 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <div className="p-4 max-w-md mx-auto">
-        <form className="space-y-4">
+        <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">From Currency</label>
             <select
@@ -82,7 +102,7 @@ export default function Home() {
             <input
               id="fromCurrency"
               name="fromCurrency"
-              readOnly
+              onChange={(e) => onChangeFrom(e.target.value)}
               placeholder="result"
               className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-green-300
               focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
@@ -110,7 +130,7 @@ export default function Home() {
             <input
               id="toCurrency"
               name="toCurrency"
-              readOnly
+              onChange={(e) => onChangeTo(e.target.value)}
               placeholder="result"
               className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-green-300
               focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
