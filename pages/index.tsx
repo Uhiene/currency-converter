@@ -11,6 +11,8 @@ export default function Home() {
   const [selectedTo, setSelectedTo] = useState<string>('ETH')
   const [fromResult, setFromResult] = useState<string>('')
   const [toResult, setToResult] = useState<string>('')
+  const [fromRate, setFromRate] = useState<string>('')
+  const [toRate, setToRate] = useState<string>('')
 
   const getExchangeRates = async (currency: string): Promise<ExchangeRate[]> => {
     const url = `https://api.coinbase.com/v2/exchange-rates?currency=${currency}`
@@ -25,27 +27,48 @@ export default function Home() {
         })
         .then((data) => {
           const fetchedRates: ExchangeRate[] = convertObjectToArray(data.data.rates)
-          const fetchedFromRate: ExchangeRate | undefined = fetchedRates.find(
+          const sortedRates: ExchangeRate[] = sortByCurrency(fetchedRates)
+          const fetchedFromRate: ExchangeRate | undefined = sortedRates.find(
             (curr) => curr.currency === selectedFrom
           )
-          const fetchedToRate: ExchangeRate | undefined = fetchedRates.find(
+          const fetchedToRate: ExchangeRate | undefined = sortedRates.find(
             (curr) => curr.currency === selectedTo
           )
 
-          setRates(fetchedRates)
-          if (fetchedFromRate) setFromResult(fetchedFromRate.rate)
-          if (fetchedToRate) setToResult(fetchedToRate.rate)
-          resolve(fetchedRates)
+          setRates(sortedRates)
+          if (fetchedFromRate) {
+            setFromResult(fetchedFromRate.rate)
+            setFromRate(fetchedFromRate.rate)
+          }
+          if (fetchedToRate) {
+            setToResult(fetchedToRate.rate)
+            setToRate(fetchedToRate.rate)
+          }
+          resolve(sortedRates)
         })
         .catch((error) => reject(error))
     })
+  }
+
+  const onChangeFrom = (num: string) => {
+    const result: number = (Number(num) / Number(fromRate)) * Number(toRate)
+    setToResult(String(result))
+    setFromResult(num)
+  }
+
+  const onChangeTo = (num: string) => {
+    const result: number = (Number(num) / Number(toRate)) * Number(fromRate)
+    setFromResult(String(result))
+    setToResult(num)
   }
 
   const convertObjectToArray = (rates: ExchangeRate): { currency: string; rate: string }[] => {
     return Object.entries(rates).map(([currency, rate]) => ({ currency, rate }))
   }
 
-  const onSelectFrom = (currency: string) => {}
+  const sortByCurrency = (rates: ExchangeRate[]): ExchangeRate[] => {
+    return rates.sort((a, b) => a.currency.localeCompare(b.currency) )
+  }
 
   useEffect(() => {
     const fetchData = async () => {
@@ -82,10 +105,10 @@ export default function Home() {
             <input
               id="fromCurrency"
               name="fromCurrency"
-              readOnly
               placeholder="result"
               className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-purple-500 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
               value={fromResult}
+              onChange={(e) => onChangeFrom(e.target.value)}
             />
           </div>
           <div>
@@ -107,10 +130,10 @@ export default function Home() {
             <input
               id="toCurrency"
               name="toCurrency"
-              readOnly
               placeholder="result"
               className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-green-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
               value={toResult}
+              onChange={(e) => onChangeTo(e.target.value)}
             />
           </div>
           <div>

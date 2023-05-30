@@ -27,10 +27,11 @@ export default function Home() {
         })
         .then((data) => {
           const fetchedRates: ExchangeRate[] = convertToObjectArray(data.data.rates)
-          const fetchedFromRate: ExchangeRate | undefined = fetchedRates.find(
+          const sortedRates: ExchangeRate[] = sortByCurrency(fetchedRates)
+          const fetchedFromRate: ExchangeRate | undefined = sortedRates.find(
             (curr) => curr.currency === selectedFrom
           )
-          const fetchedToRate: ExchangeRate | undefined = fetchedRates.find(
+          const fetchedToRate: ExchangeRate | undefined = sortedRates.find(
             (curr) => curr.currency === selectedTo
           )
 
@@ -43,8 +44,8 @@ export default function Home() {
             setToRate(fetchedToRate.rate)
           }
 
-          setRates(fetchedRates)
-          resolve(fetchedRates)
+          setRates(sortedRates)
+          resolve(sortedRates)
         })
         .catch((error) => reject(error))
     })
@@ -52,6 +53,10 @@ export default function Home() {
 
   const convertToObjectArray = (rates: ExchangeRate): { currency: string; rate: string }[] => {
     return Object.entries(rates).map(([currency, rate]) => ({ currency, rate }))
+  }
+
+  const sortByCurrency = (rates: ExchangeRate[]): ExchangeRate[] => {
+    return rates.sort((a, b) => a.currency.localeCompare(b.currency))
   }
 
   useEffect(() => {
